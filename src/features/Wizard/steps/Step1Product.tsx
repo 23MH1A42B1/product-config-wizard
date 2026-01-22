@@ -7,19 +7,26 @@ export default function Step1Product() {
 
   return (
     <div>
-      <h2 data-cy="step1-title">Select Product</h2>
+      <h2 id="step1-title" data-cy="step1-title">
+        Select Product
+      </h2>
 
+      <label htmlFor="productType">Product Type</label>
       <select
+        id="productType"
         data-cy="product-type-select"
         value={productType}
         onChange={(e) => setProductType(e.target.value)}
+        aria-describedby="productTypeHelp"
       >
         <option value="">Select</option>
         <option value="Laptop">Laptop</option>
         <option value="Mobile">Mobile</option>
       </select>
 
-      <br /><br />
+      <p id="productTypeHelp">
+        Please choose a product type to continue.
+      </p>
 
       <button
         data-cy="next-button"

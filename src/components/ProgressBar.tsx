@@ -8,10 +8,14 @@ export default function ProgressBar({ currentStep }: ProgressBarProps) {
   const currentIndex = steps.indexOf(currentStep) + 1;
 
   return (
-    <div aria-live="polite">
-      <p data-cy="progress-indicator">
+    <nav aria-label="Wizard Progress">
+      <p
+        data-cy="progress-indicator"
+        aria-current="step"
+        aria-live="polite"
+      >
         Step {currentIndex} of {steps.length}
       </p>
-    </div>
+    </nav>
   );
 }
