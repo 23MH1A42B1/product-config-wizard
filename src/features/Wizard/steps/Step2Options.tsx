@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useWizard } from '../WizardContext';
 
 export default function Step2Options() {
   const { send } = useWizard();
+  const [ram, setRam] = useState('');
 
   return (
     <div>
@@ -10,15 +12,22 @@ export default function Step2Options() {
       <input
         data-cy="ram-input"
         placeholder="RAM (e.g. 16GB)"
-        onChange={(e) =>
-          send({ type: 'NEXT', data: { ram: e.target.value } })
-        }
+        value={ram}
+        onChange={(e) => setRam(e.target.value)}
       />
 
       <br /><br />
 
       <button
-        type="button"
+        data-cy="next-button"
+        onClick={() =>
+          send({ type: 'NEXT', data: { ram } })
+        }
+      >
+        Next
+      </button>
+
+      <button
         data-cy="back-button"
         onClick={() => send({ type: 'PREV' })}
       >

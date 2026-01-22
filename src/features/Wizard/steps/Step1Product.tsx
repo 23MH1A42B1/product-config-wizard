@@ -1,21 +1,9 @@
+import { useState } from 'react';
 import { useWizard } from '../WizardContext';
 
 export default function Step1Product() {
-  const { state, send } = useWizard();
-
-  const handleNext = (value: string) => {
-    if (!value) {
-      send({
-        type: 'NEXT',
-        data: {},
-      });
-    } else {
-      send({
-        type: 'NEXT',
-        data: { productType: value },
-      });
-    }
-  };
+  const { send } = useWizard();
+  const [productType, setProductType] = useState('');
 
   return (
     <div>
@@ -23,18 +11,27 @@ export default function Step1Product() {
 
       <select
         data-cy="product-type-select"
-        onChange={(e) => handleNext(e.target.value)}
+        value={productType}
+        onChange={(e) => setProductType(e.target.value)}
       >
         <option value="">Select</option>
         <option value="Laptop">Laptop</option>
         <option value="Mobile">Mobile</option>
       </select>
 
-      {state.context?.errorMessage && (
-        <p style={{ color: 'red' }} data-cy="product-type-error">
-          Product type is required
-        </p>
-      )}
+      <br /><br />
+
+      <button
+        data-cy="next-button"
+        onClick={() =>
+          send({
+            type: 'NEXT',
+            data: { productType },
+          })
+        }
+      >
+        Next
+      </button>
     </div>
   );
 }
