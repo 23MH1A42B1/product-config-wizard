@@ -1,16 +1,13 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { useMachine } from '@xstate/react';
 import { wizardMachine } from './WizardMachine';
 
 type WizardContextType = {
-  state: unknown;
+  state: any;
   send: (event: { type: string; data?: Record<string, unknown> }) => void;
 };
 
-/**
- * Context is initialized as null
- * (this avoids undefined inference issues)
- */
 const WizardContext = createContext<WizardContextType | null>(null);
 
 export const WizardProvider = ({ children }: { children: ReactNode }) => {
@@ -25,10 +22,8 @@ export const WizardProvider = ({ children }: { children: ReactNode }) => {
 
 export const useWizard = () => {
   const context = useContext(WizardContext);
-
-  if (context === null) {
+  if (!context) {
     throw new Error('useWizard must be used within WizardProvider');
   }
-
   return context;
 };

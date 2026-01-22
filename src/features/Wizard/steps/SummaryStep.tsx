@@ -1,12 +1,21 @@
 import { useWizard } from '../WizardContext';
 
 export default function SummaryStep() {
-  const { state } = useWizard();
+  const { state, send } = useWizard() as any;
 
   return (
-    <div>
-      <h2 data-cy="summary-title">Summary</h2>
-      <pre>{JSON.stringify(state.context.globalConfig, null, 2)}</pre>
-    </div>
+    <section aria-labelledby="summary-title">
+      <h2 id="summary-title" data-cy="summary-title">
+        Summary
+      </h2>
+
+      <pre aria-live="polite">
+        {JSON.stringify(state.context.globalConfig, null, 2)}
+      </pre>
+
+      <button onClick={() => send({ type: 'PREV' })}>
+        Back
+      </button>
+    </section>
   );
 }
