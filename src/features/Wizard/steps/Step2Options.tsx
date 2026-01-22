@@ -5,15 +5,25 @@ export default function Step2Options() {
 
   return (
     <div>
-      <h2 data-cy="step2-title">Options</h2>
+      <h2 data-cy="step2-title">Configure Options</h2>
 
       <input
-        placeholder="RAM (e.g. 16GB)"
         data-cy="ram-input"
+        placeholder="RAM (e.g. 16GB)"
         onChange={(e) =>
           send({ type: 'NEXT', data: { ram: e.target.value } })
         }
       />
+
+      <br /><br />
+
+      <button
+        type="button"
+        data-cy="back-button"
+        onClick={() => send({ type: 'PREV' })}
+      >
+        Back
+      </button>
     </div>
   );
 }
