@@ -1,15 +1,24 @@
 import { useState } from 'react';
 import { useWizard } from '../WizardContext';
 
-export default function Step1Product() {
+const Step1Product = () => {
   const { send } = useWizard();
   const [productType, setProductType] = useState('');
+  const [error, setError] = useState('');
+
+  const handleNext = () => {
+    if (!productType) {
+      setError('Please select a product');
+      return;
+    }
+
+    setError('');
+    send({ type: 'NEXT', data: { productType } });
+  };
 
   return (
     <div>
-      <h2 id="step1-title" data-cy="step1-title">
-        Select Product
-      </h2>
+      <h2 data-cy="step1-title">Select Product</h2>
 
       <label htmlFor="productType">Product Type</label>
       <select
@@ -17,28 +26,23 @@ export default function Step1Product() {
         data-cy="product-type-select"
         value={productType}
         onChange={(e) => setProductType(e.target.value)}
-        aria-describedby="productTypeHelp"
       >
         <option value="">Select</option>
         <option value="Laptop">Laptop</option>
         <option value="Mobile">Mobile</option>
       </select>
 
-      <p id="productTypeHelp">
-        Please choose a product type to continue.
-      </p>
+      {error && (
+        <p role="alert" style={{ color: 'red' }}>
+          {error}
+        </p>
+      )}
 
-      <button
-        data-cy="next-button"
-        onClick={() =>
-          send({
-            type: 'NEXT',
-            data: { productType },
-          })
-        }
-      >
+      <button data-cy="next-button" onClick={handleNext}>
         Next
       </button>
     </div>
   );
-}
+};
+
+export default Step1Product;
