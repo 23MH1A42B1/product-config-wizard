@@ -5,15 +5,16 @@ import SummaryStep from './steps/SummaryStep';
 import ProgressBar from '../../components/ProgressBar';
 
 export default function Wizard() {
-  const { state } = useWizard() as any;
+  const { state } = useWizard();
+  const stateValue = state.value as string;
 
   return (
-    <div>
-      <ProgressBar currentStep={state.value} />
+    <div className="wizard-container" data-cy="wizard-container">
+      <ProgressBar currentStep={stateValue} />
 
-      {state.value === 'step1' && <Step1Product />}
-      {state.value === 'step2' && <Step2Options />}
-      {state.value === 'summary' && <SummaryStep />}
+      {stateValue === 'step1' && <Step1Product />}
+      {stateValue === 'step2' && <Step2Options />}
+      {(stateValue === 'summary' || stateValue === 'submitting' || stateValue === 'success' || stateValue === 'failure') && <SummaryStep />}
     </div>
   );
 }
