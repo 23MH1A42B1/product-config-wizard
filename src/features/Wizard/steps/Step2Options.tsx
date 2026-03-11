@@ -1,120 +1,157 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useWizard } from '../WizardContext';
-import { PRODUCT_STEP2_FIELDS } from '../types';
-import type { ProductType } from '../types';
-
-const FIELD_LABELS: Record<string, string> = {
-  ram: 'RAM',
-  storage: 'Storage',
-  color: 'Color',
-  screenSize: 'Screen Size',
-};
-
-const FIELD_PLACEHOLDERS: Record<string, string> = {
-  ram: 'e.g. 16GB',
-  storage: 'e.g. 512GB SSD',
-  color: 'e.g. Midnight Black',
-  screenSize: 'e.g. 15.6"',
-};
+import { PRODUCT_OPTIONS, PRODUCT_REQUIRED_FIELDS } from '../productConfig';
 
 export default function Step2Options() {
-  const { send, context } = useWizard();
-  const productType = context.globalConfig.productType as ProductType | undefined;
-  const fields = productType ? (PRODUCT_STEP2_FIELDS[productType] ?? ['ram']) : ['ram'];
+  const { send, state } = useWizard();
+  const productType = state.context.globalConfig.productType as string;
+  const config = PRODUCT_OPTIONS[productType] || {};
+  const requiredFields = PRODUCT_REQUIRED_FIELDS[productType] || [];
+  const errorMessage = state.context.errorMessage;
 
-  const [formData, setFormData] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    fields.forEach((f) => { init[f] = ''; });
-    return init;
+  const savedConfig = state.context.globalConfig;
+  const [formData, setFormData] = useState<Record<string, string>>({
+    ram: savedConfig.ram || '',
+    storage: savedConfig.storage || '',
+    graphics: savedConfig.graphics || '',
+    battery: savedConfig.battery || '',
   });
 
-  useEffect(() => {
-    const init: Record<string, string> = {};
-    fields.forEach((f) => { init[f] = ''; });
-    setFormData(init);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productType]);
-
-  const errorMessage = context.errorMessage;
-  const isNextDisabled = !formData['ram'] || formData['ram'].trim() === '';
-
-  const handleNext = () => {
-    send({ type: 'NEXT', data: formData } as any);
+  const updateField = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleNext = () => {
+    const data: Record<string, string> = {};
+    requiredFields.forEach((field) => {
+      data[field] = formData[field];
+    });
+    send({ type: 'NEXT', data });
+  };
+
+  const handleBack = () => {
+    const data: Record<string, string> = {};
+    requiredFields.forEach((field) => {
+      data[field] = formData[field];
+    });
+    send({ type: 'PREV', data });
+  };
+
+  const isNextDisabled = requiredFields.some((field) => !formData[field]);
+  const isFieldInvalid = (field: string) => !!errorMessage && !formData[field];
+
   return (
-    <div className="wizard-step" data-cy="step2-container">
+    <section aria-labelledby="step2-title">
       <h2 id="step2-title" data-cy="step2-title">
-        Configure Options
-        {productType && (
-          <span className="step-subtitle"> — {productType}</span>
-        )}
+        Configure {productType} Options
       </h2>
 
+      <div className="form-group">
+        <label htmlFor="ramSelect">
+          RAM <span aria-hidden="true">*</span>
+        </label>
+        <select
+          id="ramSelect"
+          data-cy="ram-input"
+          value={formData.ram}
+          onChange={(e) => updateField('ram', e.target.value)}
+          aria-required="true"
+          aria-invalid={isFieldInvalid('ram')}
+          aria-describedby={isFieldInvalid('ram') ? 'step2-error' : undefined}
+        >
+          <option value="">-- Select RAM --</option>
+          {config.ram?.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="storageSelect">
+          Storage <span aria-hidden="true">*</span>
+        </label>
+        <select
+          id="storageSelect"
+          data-cy="storage-input"
+          value={formData.storage}
+          onChange={(e) => updateField('storage', e.target.value)}
+          aria-required="true"
+          aria-invalid={isFieldInvalid('storage')}
+          aria-describedby={isFieldInvalid('storage') ? 'step2-error' : undefined}
+        >
+          <option value="">-- Select Storage --</option>
+          {config.storage?.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {productType === 'Laptop' && config.graphics && (
+        <div className="form-group" data-cy="graphics-group">
+          <label htmlFor="graphicsSelect">
+            Graphics Card <span aria-hidden="true">*</span>
+          </label>
+          <select
+            id="graphicsSelect"
+            data-cy="graphics-input"
+            value={formData.graphics}
+            onChange={(e) => updateField('graphics', e.target.value)}
+            aria-required="true"
+            aria-invalid={isFieldInvalid('graphics')}
+            aria-describedby={isFieldInvalid('graphics') ? 'step2-error' : undefined}
+          >
+            <option value="">-- Select Graphics Card --</option>
+            {config.graphics.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {productType === 'Mobile' && config.battery && (
+        <div className="form-group" data-cy="battery-group">
+          <label htmlFor="batterySelect">
+            Battery Capacity <span aria-hidden="true">*</span>
+          </label>
+          <select
+            id="batterySelect"
+            data-cy="battery-input"
+            value={formData.battery}
+            onChange={(e) => updateField('battery', e.target.value)}
+            aria-required="true"
+            aria-invalid={isFieldInvalid('battery')}
+            aria-describedby={isFieldInvalid('battery') ? 'step2-error' : undefined}
+          >
+            <option value="">-- Select Battery --</option>
+            {config.battery.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {errorMessage && (
-        <p role="alert" className="error-message" data-cy="step2-error" id="step2-error-msg">
+        <p id="step2-error" role="alert" className="error-message" data-cy="validation-error">
           {errorMessage}
         </p>
       )}
 
-      <fieldset aria-labelledby="step2-title">
-        <legend className="sr-only">Configure {productType || 'Product'} Options</legend>
-
-        {fields.map((field) => {
-          const inputId = `input-${field}`;
-          const errorId = `error-${field}`;
-          const hasError = field === 'ram' && !!errorMessage;
-
-          return (
-            <div key={field} className="form-group">
-              <label htmlFor={inputId}>
-                {FIELD_LABELS[field] ?? field}
-                <span aria-hidden="true" className="required-mark"> *</span>
-              </label>
-              <input
-                id={inputId}
-                data-cy={`${field}-input`}
-                placeholder={FIELD_PLACEHOLDERS[field] ?? ''}
-                value={formData[field] ?? ''}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, [field]: e.target.value }))
-                }
-                aria-required={field === 'ram' ? 'true' : 'false'}
-                aria-describedby={hasError ? errorId : `help-${field}`}
-                aria-invalid={hasError ? 'true' : 'false'}
-              />
-              {hasError ? (
-                <p id={errorId} role="alert" className="field-error" data-cy={`${field}-error`}>
-                  {errorMessage}
-                </p>
-              ) : (
-                <p id={`help-${field}`} className="field-help">
-                  {FIELD_PLACEHOLDERS[field] ? `Enter ${FIELD_LABELS[field] ?? field}` : ''}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </fieldset>
-
-      <div className="wizard-nav" role="group" aria-label="Wizard navigation">
-        <button
-          data-cy="back-button"
-          onClick={() => send({ type: 'PREV' } as any)}
-          className="btn btn-secondary"
-        >
+      <div className="button-group">
+        <button data-cy="back-button" onClick={handleBack}>
           Back
         </button>
-        <button
-          data-cy="next-button"
-          onClick={handleNext}
-          className="btn btn-primary"
-          disabled={isNextDisabled}
-          aria-disabled={isNextDisabled}
-        >
+        <button data-cy="next-button" onClick={handleNext} disabled={isNextDisabled}>
           Next
         </button>
       </div>
-    </div>
+    </section>
   );
 }

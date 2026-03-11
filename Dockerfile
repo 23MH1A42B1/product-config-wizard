@@ -12,6 +12,11 @@ RUN npm run build
 # ---------- Production Stage ----------
 FROM nginx:stable-alpine
 
+RUN apk add --no-cache curl
+
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copy build output to nginx html folder
 COPY --from=builder /app/dist /usr/share/nginx/html
 

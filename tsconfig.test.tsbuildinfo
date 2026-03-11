@@ -1,0 +1,1 @@
+{"root":["./src/features/wizard/wizardmachine.test.ts","./src/components/progressbar.test.tsx","./src/features/wizard/wizard.test.tsx","./src/features/wizard/steps/step1product.test.tsx","./src/features/wizard/steps/step2options.test.tsx","./src/features/wizard/steps/summarystep.test.tsx","./src/setuptests.ts"],"version":"5.9.3"}

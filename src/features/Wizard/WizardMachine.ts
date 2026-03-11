@@ -1,149 +1,141 @@
 import { createMachine, assign, fromPromise } from 'xstate';
+import { PRODUCT_REQUIRED_FIELDS, FIELD_LABELS } from './productConfig';
 
-export interface WizardContext {
-  globalConfig: {
-    productType?: string;
-    ram?: string;
-    storage?: string;
-    color?: string;
-    screenSize?: string;
-  };
-  errorMessage: string;
-  isSubmitting: boolean;
-  submitSuccess: boolean;
-}
+export const WIZARD_STEPS = ['step1', 'step2', 'summary'] as const;
 
-type WizardEvent =
-  | { type: 'NEXT'; data: Record<string, unknown> }
-  | { type: 'PREV' }
-  | { type: 'SUBMIT' }
-  | { type: 'RETRY' };
+export const wizardMachine = createMachine({
+  id: 'wizard',
+  initial: 'step1',
 
-export const wizardMachine = createMachine(
-  {
-    id: 'wizard',
-    initial: 'step1',
-    types: {} as { context: WizardContext; events: WizardEvent },
+  context: {
+    globalConfig: {} as Record<string, string>,
+    errorMessage: '',
+  },
 
-    context: {
-      globalConfig: {},
-      errorMessage: '',
-      isSubmitting: false,
-      submitSuccess: false,
-    },
-
-    states: {
-      step1: {
-        entry: assign({ errorMessage: '' }),
-        on: {
-          NEXT: [
-            {
-              guard: 'isStep1Valid',
-              target: 'step2',
-              actions: 'saveStep1Data',
-            },
-            {
-              actions: 'setStep1Error',
-            },
-          ],
-        },
-      },
-
-      step2: {
-        on: {
-          PREV: { target: 'step1', actions: 'clearError' },
-          NEXT: [
-            {
-              guard: 'isStep2Valid',
-              target: 'summary',
-              actions: 'saveStep2Data',
-            },
-            {
-              actions: 'setStep2Error',
-            },
-          ],
-        },
-      },
-
-      summary: {
-        entry: assign({ errorMessage: '' }),
-        on: {
-          PREV: { target: 'step2', actions: 'clearError' },
-          SUBMIT: { target: 'submitting' },
-        },
-      },
-
-      submitting: {
-        entry: assign({ isSubmitting: true, errorMessage: '' }),
-        invoke: {
-          id: 'submitConfig',
-          src: 'submitConfigurationService',
-          onDone: {
-            target: 'success',
-            actions: assign({ isSubmitting: false, submitSuccess: true }),
-          },
-          onError: {
-            target: 'failure',
+  states: {
+    step1: {
+      on: {
+        NEXT: [
+          {
+            target: 'step2',
+            guard: ({ event }: { event: any }) => !!event?.data?.productType,
             actions: assign({
-              isSubmitting: false,
-              errorMessage: ({ event }: any) =>
-                (event.error as Error)?.message || 'Submission failed. Please try again.',
+              globalConfig: ({ context, event }: { context: any; event: any }) => {
+                const newProductType = event.data?.productType;
+                const oldProductType = context.globalConfig.productType;
+                if (newProductType !== oldProductType) {
+                  return { productType: newProductType };
+                }
+                return { ...context.globalConfig, productType: newProductType };
+              },
+              errorMessage: () => '',
             }),
           },
+          {
+            actions: assign({
+              errorMessage: () => 'Please select a product type',
+            }),
+          },
+        ],
+      },
+    },
+
+    step2: {
+      on: {
+        PREV: {
+          target: 'step1',
+          actions: assign({
+            globalConfig: ({ context, event }: { context: any; event: any }) => ({
+              ...context.globalConfig,
+              ...(event.data || {}),
+            }),
+            errorMessage: () => '',
+          }),
+        },
+        NEXT: [
+          {
+            target: 'summary',
+            guard: ({ context, event }: { context: any; event: any }) => {
+              const data = event?.data || {};
+              const productType = context.globalConfig.productType;
+              const requiredFields = PRODUCT_REQUIRED_FIELDS[productType] || ['ram', 'storage'];
+              return requiredFields.every((field: string) => !!data[field]);
+            },
+            actions: assign({
+              globalConfig: ({ context, event }: { context: any; event: any }) => ({
+                ...context.globalConfig,
+                ...event.data,
+              }),
+              errorMessage: () => '',
+            }),
+          },
+          {
+            actions: assign({
+              errorMessage: ({ context, event }: { context: any; event: any }) => {
+                const data = event?.data || {};
+                const productType = context.globalConfig.productType;
+                const requiredFields = PRODUCT_REQUIRED_FIELDS[productType] || ['ram', 'storage'];
+                const missingField = requiredFields.find((field: string) => !data[field]);
+                if (missingField) {
+                  return `Please select ${FIELD_LABELS[missingField] || missingField}`;
+                }
+                return 'Please fill in all required fields';
+              },
+            }),
+          },
+        ],
+      },
+    },
+
+    summary: {
+      on: {
+        PREV: {
+          target: 'step2',
+          actions: assign({ errorMessage: () => '' }),
+        },
+        SUBMIT: {
+          target: 'submitting',
         },
       },
+    },
 
-      success: {
-        type: 'final',
+    submitting: {
+      invoke: {
+        src: fromPromise(async ({ input }: { input: Record<string, unknown> }) => {
+          const response = await fetch('/api/configurations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input),
+          });
+          if (!response.ok) {
+            throw new Error('Submission failed. Please try again.');
+          }
+          return response.json();
+        }),
+        input: ({ context }: { context: any }) => context.globalConfig,
+        onDone: {
+          target: 'success',
+          actions: assign({ errorMessage: () => '' }),
+        },
+        onError: {
+          target: 'summary',
+          actions: assign({
+            errorMessage: () => 'Submission failed. Please try again.',
+          }),
+        },
       },
+    },
 
-      failure: {
-        on: {
-          RETRY: { target: 'submitting' },
-          PREV: { target: 'summary', actions: 'clearError' },
+    success: {
+      on: {
+        RESTART: {
+          target: 'step1',
+          actions: assign({
+            globalConfig: () => ({}),
+            errorMessage: () => '',
+          }),
         },
       },
     },
   },
-  {
-    guards: {
-      isStep1Valid: ({ event }: any) =>
-        typeof event.data?.productType === 'string' &&
-        event.data.productType.trim() !== '',
-      isStep2Valid: ({ event }: any) =>
-        typeof event.data?.ram === 'string' && event.data.ram.trim() !== '',
-    },
-    actions: {
-      saveStep1Data: assign({
-        globalConfig: ({ context, event }: any) => ({
-          ...context.globalConfig,
-          ...event.data,
-        }),
-        errorMessage: '',
-      }),
-      saveStep2Data: assign({
-        globalConfig: ({ context, event }: any) => ({
-          ...context.globalConfig,
-          ...event.data,
-        }),
-        errorMessage: '',
-      }),
-      setStep1Error: assign({
-        errorMessage: 'Please select a product type before continuing.',
-      }),
-      setStep2Error: assign({
-        errorMessage: 'Please enter the RAM size before continuing.',
-      }),
-      clearError: assign({ errorMessage: '' }),
-    },
-    actors: {
-      submitConfigurationService: fromPromise(
-        async ({ input }: { input: WizardContext }) => {
-          console.log('Submitting configuration:', input.globalConfig);
-          await new Promise((resolve) => setTimeout(resolve, 1500));
-          return { success: true, config: input.globalConfig };
-        }
-      ),
-    },
-  }
-);
+});
