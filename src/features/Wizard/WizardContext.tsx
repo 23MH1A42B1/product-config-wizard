@@ -2,12 +2,11 @@ import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useMachine } from '@xstate/react';
 import { wizardMachine } from './WizardMachine';
-import type { WizardContext as WizardCtxType } from './WizardMachine';
 
 type WizardContextType = {
   state: ReturnType<typeof useMachine<typeof wizardMachine>>[0];
   send: ReturnType<typeof useMachine<typeof wizardMachine>>[1];
-  context: WizardCtxType;
+  context: ReturnType<typeof useMachine<typeof wizardMachine>>[0]['context'];
 };
 
 const WizardContext = createContext<WizardContextType | null>(null);

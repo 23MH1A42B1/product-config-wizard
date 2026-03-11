@@ -22,8 +22,8 @@ services:
       - "3001:3001"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/configurations"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     container_name: product-config-api
