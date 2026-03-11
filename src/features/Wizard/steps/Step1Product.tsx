@@ -1,24 +1,26 @@
 import { useState } from 'react';
 import { useWizard } from '../WizardContext';
+import { PRODUCT_TYPES } from '../types';
 
 const Step1Product = () => {
-  const { send } = useWizard();
-  const [productType, setProductType] = useState('');
-  const [error, setError] = useState('');
+  const { send, context } = useWizard();
+  const [productType, setProductType] = useState(context.globalConfig.productType ?? '');
+
+  const errorMessage = context.errorMessage;
 
   const handleNext = () => {
-    if (!productType) {
-      setError('Please select a product');
-      return;
-    }
-
-    setError('');
-    send({ type: 'NEXT', data: { productType } });
+    send({ type: 'NEXT', data: { productType } } as any);
   };
 
   return (
-    <div data-cy="step1-container">
+    <div data-cy="step1-container" className="wizard-step">
       <h2 data-cy="step1-title">Select Product</h2>
+
+      {errorMessage && (
+        <p role="alert" data-cy="step1-error" style={{ color: 'red' }}>
+          {errorMessage}
+        </p>
+      )}
 
       <label htmlFor="productType">Product Type</label>
       <select
@@ -26,21 +28,25 @@ const Step1Product = () => {
         data-cy="product-type-select"
         value={productType}
         onChange={(e) => setProductType(e.target.value)}
+        aria-required="true"
       >
         <option value="">Select</option>
-        <option value="Laptop">Laptop</option>
-        <option value="Mobile">Mobile</option>
+        {PRODUCT_TYPES.map((type) => (
+          <option key={type} value={type}>{type}</option>
+        ))}
       </select>
 
-      {error && (
-        <p role="alert" style={{ color: 'red' }}>
-          {error}
-        </p>
-      )}
-
-      <button data-cy="next-button" onClick={handleNext} disabled={!productType}>
-        Next
-      </button>
+      <div className="wizard-nav" role="group" aria-label="Wizard navigation">
+        <button
+          data-cy="next-button"
+          onClick={handleNext}
+          disabled={!productType}
+          aria-disabled={!productType}
+          className="btn btn-primary"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };
